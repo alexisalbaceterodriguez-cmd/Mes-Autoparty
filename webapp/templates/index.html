@@ -6,17 +6,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control MES</title>
     <style>
+        :root {
+            --bg-body: #121212;
+            --text-main: #ffffff;
+            --bg-card: #1e1e1e;
+            --shadow-card: rgba(0, 0, 0, 0.5);
+            --border-h2: #333;
+            --bg-btn: #2c2c2c;
+            --border-btn: #444;
+            --hover-btn: #3d3d3d;
+            --hover-border-btn: #666;
+            --bg-input: #121212;
+            --text-muted: #aaa;
+            --border-input: #444;
+        }
+
+        .light-theme {
+            --bg-body: #f5f7fa;
+            --text-main: #2d3748;
+            --bg-card: #ffffff;
+            --shadow-card: rgba(0, 0, 0, 0.08);
+            --border-h2: #e2e8f0;
+            --bg-btn: #edf2f7;
+            --border-btn: #cbd5e0;
+            --hover-btn: #e2e8f0;
+            --hover-border-btn: #a0aec0;
+            --bg-input: #ffffff;
+            --text-muted: #718096;
+            --border-input: #cbd5e0;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px;
+            padding: 0;
             box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .main-container {
@@ -25,23 +56,26 @@
             gap: 30px;
             width: 100%;
             max-width: 1100px;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
 
         .card {
-            background-color: #1e1e1e;
+            background-color: var(--bg-card);
             padding: 30px;
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px var(--shadow-card);
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
 
         h2 {
-            color: #ffffff;
+            color: var(--text-main);
             font-size: 20px;
             margin-top: 0;
             margin-bottom: 25px;
             font-weight: 600;
             letter-spacing: 0.5px;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid var(--border-h2);
             padding-bottom: 10px;
         }
 
@@ -53,10 +87,10 @@
         }
 
         button {
-            background-color: #2c2c2c;
-            color: white;
+            background-color: var(--bg-btn);
+            color: var(--text-main);
             padding: 14px 20px;
-            border: 1px solid #444;
+            border: 1px solid var(--border-btn);
             border-radius: 8px;
             cursor: pointer;
             width: 100%;
@@ -80,8 +114,8 @@
         }
 
         button:hover:not(:disabled) {
-            background-color: #3d3d3d;
-            border-color: #666;
+            background-color: var(--hover-btn);
+            border-color: var(--hover-border-btn);
         }
 
         /* Colores específicos Control */
@@ -127,7 +161,7 @@
         label {
             display: block;
             margin-bottom: 5px;
-            color: #ccc;
+            color: var(--text-muted);
             font-size: 14px;
         }
 
@@ -135,9 +169,9 @@
         input[type="number"] {
             width: 100%;
             padding: 10px;
-            background-color: #121212;
-            border: 1px solid #444;
-            color: white;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-input);
+            color: var(--text-main);
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 14px;
@@ -151,6 +185,7 @@
 
         .btn-submit {
             background-color: #007bff;
+            color: #fff;
             border: none;
             margin-top: 10px;
         }
@@ -184,7 +219,7 @@
 
         .loading {
             margin-top: 20px;
-            color: #aaa;
+            color: var(--text-muted);
             display: none;
             font-size: 14px;
             text-align: center;
@@ -210,7 +245,7 @@
 
         .caja-info {
             font-size: 12px;
-            color: #aaa;
+            color: var(--text-muted);
             font-weight: normal;
             display: block;
             margin-top: 4px;
@@ -227,6 +262,7 @@
             object-fit: cover;
             border-radius: 6px;
             flex-shrink: 0;
+            background-color: #fff;
         }
 
         .box-image-placeholder {
@@ -235,7 +271,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #444;
+            background-color: var(--border-h2);
             border-radius: 6px;
             font-size: 20px;
             flex-shrink: 0;
@@ -251,92 +287,255 @@
             font-size: 16px;
             font-weight: bold;
         }
+
+        /* Nav y Tabs */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 15px 40px;
+            background-color: var(--bg-card);
+            box-shadow: 0 2px 10px var(--shadow-card);
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar .tabs {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            width: auto;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border-btn);
+            font-size: 20px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="main-container">
-
-        <!-- SECCIÓN 1: Control de Máquina -->
-        <div class="card">
-            <h2>⚙️ Control de Máquina</h2>
-            <div class="button-group">
-                <button class="btn-start" onclick="sendControl(1)">
-                    ▶ START
-                </button>
-                <button class="btn-pause" onclick="sendControl(2)">
-                    ⏸ PAUSE
-                </button>
-                <button class="btn-stop" onclick="sendControl(0)">
-                    ⏹ STOP
-                </button>
-            </div>
-            <div id="loading-control" class="loading">
-                <div class="spinner"></div> Enviando...
-            </div>
-            <div id="res-control" class="message"></div>
+    <!-- Header / Navbar -->
+    <div class="navbar">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('tab-gestion', this)">Gestión de máquinas y
+                productos</button>
+            <button class="tab-btn" onclick="openTab('tab-dashboard', this)">Dashboard statistics</button>
+            <button class="tab-btn" onclick="openTab('tab-status', this)">Status machine</button>
         </div>
-
-        <!-- SECCIÓN 2: Selección de Producto -->
-        <div class="card">
-            <h2>📦 Producto (Cajas)</h2>
-            <div id="box-list" class="button-group">
-                <!-- Se llenará dinámicamente con JS -->
-                <div style="text-align:center; color:#888;">Cargando cajas...</div>
-            </div>
-            <div id="loading-box" class="loading">
-                <div class="spinner"></div> Configurando producto...
-            </div>
-            <div id="res-box" class="message"></div>
-        </div>
-
-        <!-- SECCIÓN 3: Nueva Caja -->
-        <div class="card">
-            <h2>➕ Definir Nueva Caja</h2>
-            <form id="newBoxForm">
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <div class="form-group" style="flex:2;">
-                        <label>Nombre del formato</label>
-                        <input type="text" id="box_name" placeholder="Ej: Extra Grande" required>
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>ID Box Type</label>
-                        <input type="number" id="box_type_id" placeholder="Ej: 4" required min="1">
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Altura</label>
-                        <input type="number" id="box_h" required min="1">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Anchura</label>
-                        <input type="number" id="box_w" required min="1">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Largo</label>
-                        <input type="number" id="box_l" required min="1">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Imagen del Producto (Opcional)</label>
-                    <input type="file" id="box_image" accept="image/*"
-                        style="background: none; border:none; padding: 0;">
-                </div>
-                <button type="submit" class="btn-submit" id="btn-create-box">Crear y Guardar</button>
-            </form>
-            <div id="loading-create" class="loading">
-                <div class="spinner"></div> Guardando...
-            </div>
-            <div id="res-create" class="message"></div>
-        </div>
-
+        <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Cambiar tema">☀️</button>
     </div>
 
+    <!-- Pestaña 1: Gestión de máquinas y productos -->
+    <div id="tab-gestion" class="tab-content active">
+        <div class="main-container">
+            <!-- SECCIÓN 1: Control de Máquina -->
+            <div class="card">
+                <h2>⚙️ Control de Máquina</h2>
+                <div class="button-group">
+                    <button class="btn-start" onclick="sendControl(1)">
+                        ▶ START
+                    </button>
+                    <button class="btn-pause" onclick="sendControl(2)">
+                        ⏸ PAUSE
+                    </button>
+                    <button class="btn-stop" onclick="sendControl(0)">
+                        ⏹ STOP
+                    </button>
+                </div>
+                <div id="loading-control" class="loading">
+                    <div class="spinner"></div> Enviando...
+                </div>
+                <div id="res-control" class="message"></div>
+            </div>
+
+            <!-- SECCIÓN 2: Selección de Producto -->
+            <div class="card">
+                <h2>📦 Producto (Cajas)</h2>
+                <div id="box-list" class="button-group">
+                    <!-- Se llenará dinámicamente con JS -->
+                    <div style="text-align:center; color:#888;">Cargando cajas...</div>
+                </div>
+                <div id="loading-box" class="loading">
+                    <div class="spinner"></div> Configurando producto...
+                </div>
+                <div id="res-box" class="message"></div>
+            </div>
+
+            <!-- SECCIÓN 3: Nueva Caja -->
+            <div class="card">
+                <h2>➕ Definir Nueva Caja</h2>
+                <form id="newBoxForm">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div class="form-group" style="flex:2;">
+                            <label>Nombre del formato</label>
+                            <input type="text" id="box_name" placeholder="Ej: Extra Grande" required>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>ID Box Type</label>
+                            <input type="number" id="box_type_id" placeholder="Ej: 4" required min="1">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex:1;">
+                            <label>Altura</label>
+                            <input type="number" id="box_h" required min="1">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Anchura</label>
+                            <input type="number" id="box_w" required min="1">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Largo</label>
+                            <input type="number" id="box_l" required min="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen del Producto (Opcional)</label>
+                        <input type="file" id="box_image" accept="image/*"
+                            style="background: none; border:none; padding: 0;">
+                    </div>
+                    <button type="submit" class="btn-submit" id="btn-create-box">Crear y Guardar</button>
+                </form>
+                <div id="loading-create" class="loading">
+                    <div class="spinner"></div> Guardando...
+                </div>
+                <div id="res-create" class="message"></div>
+            </div>
+        </div> <!-- End main-container -->
+    </div> <!-- End tab-gestion -->
+
+    <!-- Pestaña 2: Dashboard statistics -->
+    <div id="tab-dashboard" class="tab-content">
+        <div class="main-container">
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>📈 Evolución OEE (Availability, Performance, Quality)</h2>
+                <canvas id="chartOEE" height="100"></canvas>
+            </div>
+            <div class="card">
+                <h2>📊 Producción (OK vs NOK)</h2>
+                <canvas id="chartProduction"></canvas>
+            </div>
+            <div class="card">
+                <h2>⏱️ Velocidad & Ciclo</h2>
+                <canvas id="chartSpeed"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestaña 3: Status machine -->
+    <div id="tab-status" class="tab-content">
+        <div class="main-container" id="kpi-container">
+            <!-- Se generará dinámicamente con JS -->
+            <div style="text-align:center; color:#888; width: 100%;">Esperando datos en tiempo real...</div>
+        </div>
+    </div>
+
+    <!-- Cargar Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
-        // Cargar cajas al iniciar la página
-        document.addEventListener('DOMContentLoaded', loadBoxes);
+        // --- INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadBoxes();
+        });
+
+        // --- SISTEMA DE PESTAÑAS ---
+        function openTab(tabId, btnElement) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            // Quitar 'active' a todos los botones
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Mostrar pestaña actual
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+
+            // Cargar datos a demanda
+            if (tabId === 'tab-dashboard' && !window.chartsLoaded) {
+                loadDashboardData();
+            } else if (tabId === 'tab-status' && !window.kpiLoopStarted) {
+                startKPILoop();
+            }
+        }
+
+        // --- SISTEMA DE TEMAS (DARK/LIGHT) ---
+        function initTheme() {
+            const isLight = localStorage.getItem('theme') === 'light';
+            if (isLight) {
+                document.body.classList.add('light-theme');
+                document.getElementById('theme-btn').innerText = '🌙';
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('light-theme');
+
+            const isLight = body.classList.contains('light-theme');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            document.getElementById('theme-btn').innerText = isLight ? '🌙' : '☀️';
+
+            // Actualizar gráficos si están cargados para que el texto sea visible
+            if (window.chartsLoaded) {
+                updateChartsTheme(isLight);
+            }
+        }
 
         // --- FUNCIONES DE MÁQUINA (START/STOP/PAUSE) ---
         async function sendControl(valor) {
@@ -359,6 +558,176 @@
             } finally {
                 toggleUI(false, resultDiv, loadingDiv);
             }
+        }
+
+        // --- CARGA DE DATOS DASHBOARD (Chart.js) ---
+        let oeeChart, prodChart, speedChart;
+
+        async function loadDashboardData() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+
+                if (!data || data.length === 0) return;
+
+                const labels = data.map(d => d.db_timestamp.substring(11, 19)); // HH:MM:SS
+
+                // Color variables for themes
+                const isLight = document.body.classList.contains('light-theme');
+                const getGridColor = () => isLight ? '#e2e8f0' : '#444';
+                const getTextColor = () => isLight ? '#4a5568' : '#aaa';
+
+                const commonOptions = {
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { color: getTextColor() }, grid: { color: getGridColor() } },
+                        y: { ticks: { color: getTextColor() }, grid: { color: getGridColor() } }
+                    },
+                    plugins: { legend: { labels: { color: getTextColor() } } }
+                };
+
+                // OEE Line Chart
+                const ctxOEE = document.getElementById('chartOEE').getContext('2d');
+                oeeChart = new Chart(ctxOEE, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Availability (%)', data: data.map(d => parseFloat(d.Availability?.replace(',', '.') || 0)), borderColor: '#38ef7d', tension: 0.3 },
+                            { label: 'Performance (%)', data: data.map(d => parseFloat(d.Performance?.replace(',', '.') || 0)), borderColor: '#007bff', tension: 0.3 },
+                            { label: 'Quality (%)', data: data.map(d => parseFloat(d.Quality?.replace(',', '.') || 0)), borderColor: '#f2c94c', tension: 0.3 }
+                        ]
+                    },
+                    options: commonOptions
+                });
+
+                // Production Bar Chart
+                const ctxProd = document.getElementById('chartProduction').getContext('2d');
+                prodChart = new Chart(ctxProd, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Parts OK', data: data.map(d => d.Parts_OK || 0), backgroundColor: 'rgba(56, 239, 125, 0.7)' },
+                            { label: 'Parts NOK', data: data.map(d => d.Parts_NOK || 0), backgroundColor: 'rgba(239, 71, 58, 0.7)' }
+                        ]
+                    },
+                    options: commonOptions
+                });
+
+                // Speed & Cycle Chart
+                const ctxSpeed = document.getElementById('chartSpeed').getContext('2d');
+                speedChart = new Chart(ctxSpeed, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Target Speed', data: data.map(d => parseFloat(d.Target_Speed?.replace(',', '.') || 0)), borderColor: '#f2994a', borderDash: [5, 5] },
+                            { label: 'Cycle Time (s)', data: data.map(d => parseFloat(d.Last_Cycle_Time?.replace(',', '.') || 0)), borderColor: '#9b51e0' }
+                        ]
+                    },
+                    options: commonOptions
+                });
+
+                window.chartsLoaded = true;
+
+            } catch (e) {
+                console.error("Error cargando dashboard:", e);
+            }
+        }
+
+        function updateChartsTheme(isLight) {
+            const gridColor = isLight ? '#e2e8f0' : '#444';
+            const textColor = isLight ? '#4a5568' : '#aaa';
+
+            [oeeChart, prodChart, speedChart].forEach(chart => {
+                if (chart) {
+                    chart.options.scales.x.ticks.color = textColor;
+                    chart.options.scales.x.grid.color = gridColor;
+                    chart.options.scales.y.ticks.color = textColor;
+                    chart.options.scales.y.grid.color = gridColor;
+                    chart.options.plugins.legend.labels.color = textColor;
+                    chart.update();
+                }
+            });
+        }
+
+        // --- SISTEMA KPI EN DIRECTO ---
+        async function fetchKPIs() {
+            try {
+                const res = await fetch('/api/kpi');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const container = document.getElementById('kpi-container');
+
+                // Formateadores
+                const isRunning = data.Heartbeat === 1;
+                const stateColor = data.Machine_State === 4339 ? '#38ef7d' : '#f2c94c'; // Verde si ok, Amarillo si idle (ejemplo)
+
+                container.innerHTML = `
+                    <div class="card" style="text-align: center; border-bottom: 4px solid ${isRunning ? '#38ef7d' : '#ef473a'}">
+                        <h3>Heartbeat</h3>
+                        <div style="font-size: 32px; font-weight: bold; color: ${isRunning ? '#38ef7d' : '#ef473a'}">
+                            ${isRunning ? '❤️ ACTIVE' : '💔 IDLE'}
+                        </div>
+                        <span class="caja-info">Actualizado: ${data.db_timestamp.substring(11, 19)}</span>
+                    </div>
+
+                    <div class="card" style="text-align: center; border-bottom: 4px solid ${stateColor}">
+                        <h3>Machine State</h3>
+                        <div style="font-size: 40px; font-weight: bold; color: ${stateColor}">${data.Machine_State || '-'}</div>
+                    </div>
+
+                    <div class="card" style="text-align: center;">
+                        <h3>Total Parts Produced</h3>
+                        <div style="font-size: 40px; font-weight: bold; color: #007bff">${data.Total_Parts_Produced || 0}</div>
+                        <span style="color: #38ef7d">OK: ${data.Parts_OK || 0}</span> | 
+                        <span style="color: #ef473a">NOK: ${data.Parts_NOK || 0}</span>
+                    </div>
+
+                    <div class="card" style="text-align: center;">
+                        <h3>OEE Performance</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <div>
+                                <div style="font-size: 20px; font-weight: bold;">${data.Availability || '0'}%</div>
+                                <span class="caja-info">Availability</span>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: bold;">${data.Performance || '0'}%</div>
+                                <span class="caja-info">Performance</span>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: bold;">${data.Quality || '0'}%</div>
+                                <span class="caja-info">Quality</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="text-align: center;">
+                        <h3>Speed & Cycle</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <div>
+                                <div style="font-size: 24px; font-weight: bold; color: #f2994a">${data.Target_Speed || '0'}</div>
+                                <span class="caja-info">Target Speed</span>
+                            </div>
+                            <div>
+                                <div style="font-size: 24px; font-weight: bold; color: #9b51e0">${data.Last_Cycle_Time || '0'}s</div>
+                                <span class="caja-info">Last Cycle Time</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } catch (e) {
+                console.error("Error obtaining KPIs:", e);
+            }
+        }
+
+        function startKPILoop() {
+            window.kpiLoopStarted = true;
+            fetchKPIs(); // Primera vez
+            setInterval(fetchKPIs, 3000); // Luego cada 3 segundos
         }
 
         // --- FUNCIONES DE PRODUCTO ---

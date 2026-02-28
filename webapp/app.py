@@ -266,5 +266,40 @@ def submit_box():
     except Exception as e:
         return jsonify({'error': f'Error inesperado al ejecutar: {str(e)}'}), 500
 
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """Devuelve el histórico de las últimas 100 lecturas para el dashboard."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Obtenemos las últimas 100 y luego las ordenamos cronológicamente en memoria
+        cursor.execute('SELECT * FROM mes_data ORDER BY id DESC LIMIT 100')
+        rows = cursor.fetchall()
+        
+        stats = [dict(row) for row in reversed(rows)]
+        conn.close()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kpi', methods=['GET'])
+def get_kpi():
+    """Devuelve la lectura más reciente para visualizar los KPIs en tiempo real."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM mes_data ORDER BY id DESC LIMIT 1')
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return jsonify(dict(row))
+        return jsonify({}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
