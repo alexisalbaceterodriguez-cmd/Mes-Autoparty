@@ -4,6 +4,8 @@ import sqlite3
 import subprocess
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
+import time
 
 app = Flask(__name__)
 
@@ -12,6 +14,8 @@ NOTEBOOK_PATH = os.path.join(os.path.dirname(__file__), '..', 'notebooks', 'writ
 PRODUCT_NOTEBOOK_PATH = os.path.join(os.path.dirname(__file__), '..', 'notebooks', 'write_product_config.ipynb')
 PYTHON_EXEC = os.path.join(os.path.dirname(__file__), '..', 'venv', 'Scripts', 'python.exe')
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'datos.db')
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'images')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -25,6 +29,7 @@ def init_db():
             altura INTEGER,
             anchura INTEGER,
             largo INTEGER,
+            image_path TEXT,
             fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -32,6 +37,11 @@ def init_db():
     # Intento de añadir columna si la tabla ya existía de antes
     try:
         cursor.execute("ALTER TABLE cajas_config ADD COLUMN box_type INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass # La columna ya existe
+        
+    try:
+        cursor.execute("ALTER TABLE cajas_config ADD COLUMN image_path TEXT")
     except sqlite3.OperationalError:
         pass # La columna ya existe
     
@@ -74,23 +84,36 @@ def get_boxes():
 
 @app.route('/api/boxes', methods=['POST'])
 def create_box():
-    data = request.get_json()
-    if not data or not all(k in data for k in ('tipo_caja', 'box_type', 'altura', 'anchura', 'largo')):
-        return jsonify({'error': 'Faltan parámetros (tipo_caja, box_type, altura, anchura, largo)'}), 400
-        
     try:
-        tipo_caja = data['tipo_caja']
-        box_type = int(data['box_type'])
-        altura = int(data['altura'])
-        anchura = int(data['anchura'])
-        largo = int(data['largo'])
+        tipo_caja = request.form.get('tipo_caja')
+        box_type_str = request.form.get('box_type')
+        altura_str = request.form.get('altura')
+        anchura_str = request.form.get('anchura')
+        largo_str = request.form.get('largo')
+        
+        if not all([tipo_caja, box_type_str, altura_str, anchura_str, largo_str]):
+            return jsonify({'error': 'Faltan parámetros (tipo_caja, box_type, altura, anchura, largo)'}), 400
+
+        box_type = int(box_type_str)
+        altura = int(altura_str)
+        anchura = int(anchura_str)
+        largo = int(largo_str)
+        
+        image_path = None
+        file = request.files.get('image')
+        if file and file.filename != '':
+            filename = secure_filename(file.filename)
+            unique_filename = f"{int(time.time())}_{filename}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(file_path)
+            image_path = f"/static/images/{unique_filename}"
         
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO cajas_config (tipo_caja, box_type, altura, anchura, largo)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (tipo_caja, box_type, altura, anchura, largo))
+            INSERT INTO cajas_config (tipo_caja, box_type, altura, anchura, largo, image_path)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (tipo_caja, box_type, altura, anchura, largo, image_path))
         conn.commit()
         conn.close()
         return jsonify({'message': f'Caja {tipo_caja} creada correctamente'})
