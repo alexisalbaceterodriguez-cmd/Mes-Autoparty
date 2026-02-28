@@ -593,9 +593,9 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Availability (%)', data: data.map(d => parseFloat(d.Availability?.replace(',', '.') || 0)), borderColor: '#38ef7d', tension: 0.3 },
-                            { label: 'Performance (%)', data: data.map(d => parseFloat(d.Performance?.replace(',', '.') || 0)), borderColor: '#007bff', tension: 0.3 },
-                            { label: 'Quality (%)', data: data.map(d => parseFloat(d.Quality?.replace(',', '.') || 0)), borderColor: '#f2c94c', tension: 0.3 }
+                            { label: 'Availability (%)', data: data.map(d => parseFloat(String(d.Availability || 0).replace(',', '.'))), borderColor: '#38ef7d', tension: 0.3 },
+                            { label: 'Performance (%)', data: data.map(d => parseFloat(String(d.Performance || 0).replace(',', '.'))), borderColor: '#007bff', tension: 0.3 },
+                            { label: 'Quality (%)', data: data.map(d => parseFloat(String(d.Quality || 0).replace(',', '.'))), borderColor: '#f2c94c', tension: 0.3 }
                         ]
                     },
                     options: commonOptions
@@ -622,8 +622,8 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Target Speed', data: data.map(d => parseFloat(d.Target_Speed?.replace(',', '.') || 0)), borderColor: '#f2994a', borderDash: [5, 5] },
-                            { label: 'Cycle Time (s)', data: data.map(d => parseFloat(d.Last_Cycle_Time?.replace(',', '.') || 0)), borderColor: '#9b51e0' }
+                            { label: 'Target Speed', data: data.map(d => parseFloat(String(d.Target_Speed || 0).replace(',', '.'))), borderColor: '#f2994a', borderDash: [5, 5] },
+                            { label: 'Cycle Time (s)', data: data.map(d => parseFloat(String(d.Last_Cycle_Time || 0).replace(',', '.'))), borderColor: '#9b51e0' }
                         ]
                     },
                     options: commonOptions
