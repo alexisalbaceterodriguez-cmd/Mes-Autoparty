@@ -572,6 +572,30 @@
 
                 const labels = data.map(d => d.db_timestamp.substring(11, 19)); // HH:MM:SS
 
+                // --- If charts are already loaded, just update data ---
+                if (window.chartsLoaded) {
+                    // Update OEE
+                    oeeChart.data.labels = labels;
+                    oeeChart.data.datasets[0].data = data.map(d => parseFloat(String(d.Availability || 0).replace(',', '.')));
+                    oeeChart.data.datasets[1].data = data.map(d => parseFloat(String(d.Performance || 0).replace(',', '.')));
+                    oeeChart.data.datasets[2].data = data.map(d => parseFloat(String(d.Quality || 0).replace(',', '.')));
+                    oeeChart.update();
+
+                    // Update Production
+                    prodChart.data.labels = labels;
+                    prodChart.data.datasets[0].data = data.map(d => d.Parts_OK || 0);
+                    prodChart.data.datasets[1].data = data.map(d => d.Parts_NOK || 0);
+                    prodChart.update();
+
+                    // Update Speed & Cycle
+                    speedChart.data.labels = labels;
+                    speedChart.data.datasets[0].data = data.map(d => parseFloat(String(d.Target_Speed || 0).replace(',', '.')));
+                    speedChart.data.datasets[1].data = data.map(d => parseFloat(String(d.Last_Cycle_Time || 0).replace(',', '.')));
+                    speedChart.update();
+                    return;
+                }
+
+                // --- First time Initialization ---
                 // Color variables for themes
                 const isLight = document.body.classList.contains('light-theme');
                 const getGridColor = () => isLight ? '#e2e8f0' : '#444';
@@ -630,6 +654,12 @@
                 });
 
                 window.chartsLoaded = true;
+
+                // Start Dashboard Polling Loop
+                if (!window.dashboardLoopStarted) {
+                    window.dashboardLoopStarted = true;
+                    setInterval(loadDashboardData, 1000); // 1 second polling
+                }
 
             } catch (e) {
                 console.error("Error cargando dashboard:", e);
@@ -727,7 +757,7 @@
         function startKPILoop() {
             window.kpiLoopStarted = true;
             fetchKPIs(); // Primera vez
-            setInterval(fetchKPIs, 3000); // Luego cada 3 segundos
+            setInterval(fetchKPIs, 1000); // Luego cada 1 segundo
         }
 
         // --- FUNCIONES DE PRODUCTO ---
