@@ -24,7 +24,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cajas_config (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo_caja TEXT UNIQUE,
+            Description_Type TEXT UNIQUE,
             box_type INTEGER,
             altura INTEGER,
             anchura INTEGER,
@@ -45,6 +45,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass # La columna ya existe
     
+    # Intento de renombrar la columna si existe como tipo_caja
+    try:
+        cursor.execute("ALTER TABLE cajas_config RENAME COLUMN tipo_caja TO Description_Type")
+    except sqlite3.OperationalError:
+        pass # Quizas ya ha sido renombrada o no existia antigua
+
     # Insert default data if table is empty
     cursor.execute('SELECT COUNT(*) FROM cajas_config')
     if cursor.fetchone()[0] == 0:
@@ -54,7 +60,7 @@ def init_db():
             ('Grande', 3, 3, 4, 5)
         ]
         cursor.executemany('''
-            INSERT INTO cajas_config (tipo_caja, box_type, altura, anchura, largo)
+            INSERT INTO cajas_config (Description_Type, box_type, altura, anchura, largo)
             VALUES (?, ?, ?, ?, ?)
         ''', default_boxes)
         
@@ -85,14 +91,14 @@ def get_boxes():
 @app.route('/api/boxes', methods=['POST'])
 def create_box():
     try:
-        tipo_caja = request.form.get('tipo_caja')
+        description_type = request.form.get('Description_Type')
         box_type_str = request.form.get('box_type')
         altura_str = request.form.get('altura')
         anchura_str = request.form.get('anchura')
         largo_str = request.form.get('largo')
         
-        if not all([tipo_caja, box_type_str, altura_str, anchura_str, largo_str]):
-            return jsonify({'error': 'Faltan parámetros (tipo_caja, box_type, altura, anchura, largo)'}), 400
+        if not all([description_type, box_type_str, altura_str, anchura_str, largo_str]):
+            return jsonify({'error': 'Faltan parámetros (Description_Type, box_type, altura, anchura, largo)'}), 400
 
         box_type = int(box_type_str)
         altura = int(altura_str)
@@ -111,14 +117,14 @@ def create_box():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO cajas_config (tipo_caja, box_type, altura, anchura, largo, image_path)
+            INSERT INTO cajas_config (Description_Type, box_type, altura, anchura, largo, image_path)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (tipo_caja, box_type, altura, anchura, largo, image_path))
+        ''', (description_type, box_type, altura, anchura, largo, image_path))
         conn.commit()
         conn.close()
-        return jsonify({'message': f'Caja {tipo_caja} creada correctamente'})
+        return jsonify({'message': f'Caja {description_type} creada correctamente'})
     except sqlite3.IntegrityError:
-        return jsonify({'error': f'La caja con nombre {tipo_caja} ya existe'}), 400
+        return jsonify({'error': f'La caja con nombre {description_type} ya existe'}), 400
     except ValueError:
          return jsonify({'error': 'Altura, anchura y largo deben ser números enteros'}), 400
     except Exception as e:
@@ -182,22 +188,22 @@ def submit():
 @app.route('/submit_box', methods=['POST'])
 def submit_box():
     data = request.get_json()
-    if not data or 'tipo_caja' not in data:
-        return jsonify({'error': 'No se proporcionó ningún tipo de caja'}), 400
+    if not data or 'Description_Type' not in data:
+        return jsonify({'error': 'No se proporcionó ningún tipo de caja (Description_Type)'}), 400
 
-    tipo_caja = data['tipo_caja']
+    description_type = data['Description_Type']
     
     # 1. Get box dimensions from DB
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute('SELECT box_type, altura, anchura, largo FROM cajas_config WHERE tipo_caja = ?', (tipo_caja,))
+        cursor.execute('SELECT box_type, altura, anchura, largo FROM cajas_config WHERE Description_Type = ?', (description_type,))
         row = cursor.fetchone()
         conn.close()
         
         if not row:
-            return jsonify({'error': f'Caja {tipo_caja} no encontrada en la base de datos'}), 404
+            return jsonify({'error': f'Caja {description_type} no encontrada en la base de datos'}), 404
             
         box_type_val = row['box_type']
         altura_val = row['altura']
@@ -211,6 +217,7 @@ def submit_box():
         with open(PRODUCT_NOTEBOOK_PATH, 'r', encoding='utf-8') as f:
             notebook = json.load(f)
             
+        modificado_description_type = False
         modificado_box_type = False
         modificado_altura = False
         modificado_anchura = False
@@ -220,7 +227,10 @@ def submit_box():
             if cell.get('cell_type') == 'code':
                 source = cell.get('source', [])
                 for i, line in enumerate(source):
-                    if line.startswith('box_type_val ='):
+                    if line.startswith('description_type_val ='):
+                        source[i] = f'description_type_val = "{description_type}"\n'
+                        modificado_description_type = True
+                    elif line.startswith('box_type_val ='):
                         source[i] = f'box_type_val = {box_type_val}\n'
                         modificado_box_type = True
                     elif line.startswith('altura_val ='):
@@ -233,7 +243,7 @@ def submit_box():
                         source[i] = f'largo_val = {largo_val}\n'
                         modificado_largo = True
         
-        if not (modificado_box_type and modificado_altura and modificado_anchura and modificado_largo):
+        if not (modificado_description_type and modificado_box_type and modificado_altura and modificado_anchura and modificado_largo):
              return jsonify({'error': 'No se encontraron las variables en el notebook'}), 500
              
         with open(PRODUCT_NOTEBOOK_PATH, 'w', encoding='utf-8') as f:
@@ -248,7 +258,7 @@ def submit_box():
     try:
         cmd = [PYTHON_EXEC, "-m", "jupyter", "nbconvert", "--execute", "--inplace", PRODUCT_NOTEBOOK_PATH]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return jsonify({'message': f'Configuración de la caja {tipo_caja} ({altura_val}x{anchura_val}x{largo_val}) enviada correctamente'})
+        return jsonify({'message': f'Configuración de la caja {description_type} ({altura_val}x{anchura_val}x{largo_val}) enviada correctamente'})
     except subprocess.CalledProcessError as e:
         print(f"Error stdout:\n{e.stdout}")
         print(f"Error stderr:\n{e.stderr}")

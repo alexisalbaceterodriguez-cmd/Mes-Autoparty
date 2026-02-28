@@ -373,14 +373,14 @@
                 boxes.forEach(box => {
                     const btn = document.createElement('button');
                     btn.className = 'box-btn';
-                    btn.onclick = () => selectBox(box.tipo_caja);
+                    btn.onclick = () => selectBox(box.Description_Type);
 
-                    const imgTag = box.image_path ? `<img src="${box.image_path}" class="box-image" alt="${box.tipo_caja}">` : `<div class="box-image-placeholder">📦</div>`;
+                    const imgTag = box.image_path ? `<img src="${box.image_path}" class="box-image" alt="${box.Description_Type}">` : `<div class="box-image-placeholder">📦</div>`;
 
                     btn.innerHTML = `
                         ${imgTag}
                         <div class="box-content-info">
-                            <span class="box-title">${box.tipo_caja}</span>
+                            <span class="box-title">${box.Description_Type}</span>
                             <span class="caja-info">Box Type: ${box.box_type} | ${box.altura} x ${box.anchura} x ${box.largo}</span>
                         </div>
                     `;
@@ -391,7 +391,7 @@
             }
         }
 
-        async function selectBox(tipo_caja) {
+        async function selectBox(description_type) {
             const resultDiv = document.getElementById('res-box');
             const loadingDiv = document.getElementById('loading-box');
             toggleUI(true, resultDiv, loadingDiv);
@@ -400,7 +400,7 @@
                 const response = await fetch('/submit_box', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tipo_caja: tipo_caja })
+                    body: JSON.stringify({ Description_Type: description_type })
                 });
                 const data = await response.json();
                 showMessage(response.ok, response.ok ? `✅ ${data.message}` : `❌ ${data.error}`, resultDiv);
@@ -418,7 +418,7 @@
             const loadingDiv = document.getElementById('loading-create');
 
             const formData = new FormData();
-            formData.append('tipo_caja', document.getElementById('box_name').value);
+            formData.append('Description_Type', document.getElementById('box_name').value);
             formData.append('box_type', document.getElementById('box_type_id').value);
             formData.append('altura', document.getElementById('box_h').value);
             formData.append('anchura', document.getElementById('box_w').value);
