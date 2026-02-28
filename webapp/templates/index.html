@@ -19,6 +19,16 @@
             --bg-input: #121212;
             --text-muted: #aaa;
             --border-input: #444;
+            --primary-blue: #007bff;
+            --hover-blue: #0069d9;
+            --success-bg: rgba(40, 167, 69, 0.2);
+            --success-text: #4ade80;
+            --success-border: rgba(40, 167, 69, 0.3);
+            --error-bg: rgba(220, 53, 69, 0.2);
+            --error-text: #ff6b6b;
+            --error-border: rgba(220, 53, 69, 0.3);
+            --spinner: rgba(255, 255, 255, 0.3);
+            --spinner-top: #fff;
         }
 
         .light-theme {
@@ -34,6 +44,16 @@
             --bg-input: #ffffff;
             --text-muted: #718096;
             --border-input: #cbd5e0;
+            --primary-blue: #3182ce;
+            --hover-blue: #2b6cb0;
+            --success-bg: rgba(72, 187, 120, 0.15);
+            --success-text: #2f855a;
+            --success-border: rgba(72, 187, 120, 0.3);
+            --error-bg: rgba(245, 101, 101, 0.15);
+            --error-text: #c53030;
+            --error-border: rgba(245, 101, 101, 0.3);
+            --spinner: rgba(0, 0, 0, 0.1);
+            --spinner-top: #3182ce;
         }
 
         body {
@@ -179,19 +199,19 @@
 
         input:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 5px var(--primary-blue);
         }
 
         .btn-submit {
-            background-color: #007bff;
+            background-color: var(--primary-blue);
             color: #fff;
             border: none;
             margin-top: 10px;
         }
 
         .btn-submit:hover:not(:disabled) {
-            background-color: #0069d9;
+            background-color: var(--hover-blue);
         }
 
         /* Notificaciones y Carga */
@@ -206,15 +226,15 @@
         }
 
         .success {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #4ade80;
-            border: 1px solid rgba(40, 167, 69, 0.3);
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid var(--success-border);
         }
 
         .error {
-            background-color: rgba(220, 53, 69, 0.2);
-            color: #ff6b6b;
-            border: 1px solid rgba(220, 53, 69, 0.3);
+            background-color: var(--error-bg);
+            color: var(--error-text);
+            border: 1px solid var(--error-border);
         }
 
         .loading {
@@ -228,9 +248,9 @@
         .spinner {
             width: 16px;
             height: 16px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            border: 3px solid var(--spinner);
             border-radius: 50%;
-            border-top-color: #fff;
+            border-top-color: var(--spinner-top);
             animation: spin 1s ease-in-out infinite;
             display: inline-block;
             vertical-align: middle;
@@ -539,25 +559,11 @@
 
         // --- FUNCIONES DE MÁQUINA (START/STOP/PAUSE) ---
         async function sendControl(valor) {
-            const resultDiv = document.getElementById('res-control');
-            const loadingDiv = document.getElementById('loading-control');
-            toggleUI(true, resultDiv, loadingDiv);
+            const apiData = { valor: valor };
+            let cmdName = valor === 1 ? 'START' : (valor === 0 ? 'STOP' : 'PAUSE');
+            const successMsg = `✅ Comando <b>${cmdName}</b> ejecutado.`;
 
-            try {
-                const response = await fetch('/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ valor: valor })
-                });
-                const data = await response.json();
-
-                let cmdName = valor === 1 ? 'START' : (valor === 0 ? 'STOP' : 'PAUSE');
-                showMessage(response.ok, response.ok ? `✅ Comando <b>${cmdName}</b> ejecutado.` : `❌ ${data.error}`, resultDiv);
-            } catch (error) {
-                showMessage(false, `❌ Error: ${error.message}`, resultDiv);
-            } finally {
-                toggleUI(false, resultDiv, loadingDiv);
-            }
+            await apiCall('/submit', 'POST', apiData, 'res-control', 'loading-control', successMsg);
         }
 
         // --- CARGA DE DATOS DASHBOARD (Chart.js) ---
@@ -566,9 +572,10 @@
         async function loadDashboardData() {
             try {
                 const res = await fetch('/api/stats');
-                const data = await res.json();
+                const result = await res.json();
 
-                if (!data || data.length === 0) return;
+                if (!result.success || !result.data || result.data.length === 0) return;
+                const data = result.data;
 
                 const labels = data.map(d => d.db_timestamp.substring(11, 19)); // HH:MM:SS
 
@@ -687,8 +694,10 @@
             try {
                 const res = await fetch('/api/kpi');
                 if (!res.ok) return;
-                const data = await res.json();
+                const result = await res.json();
+                if (!result.success || !result.data) return;
 
+                const data = result.data;
                 const container = document.getElementById('kpi-container');
 
                 // Formateadores
@@ -769,7 +778,7 @@
                 const boxList = document.getElementById('box-list');
                 boxList.innerHTML = '';
 
-                boxes.forEach(box => {
+                (Array.isArray(boxes) ? boxes : boxes.data).forEach(box => {
                     const btn = document.createElement('button');
                     btn.className = 'box-btn';
                     btn.onclick = () => selectBox(box.Description_Type);
@@ -791,30 +800,13 @@
         }
 
         async function selectBox(description_type) {
-            const resultDiv = document.getElementById('res-box');
-            const loadingDiv = document.getElementById('loading-box');
-            toggleUI(true, resultDiv, loadingDiv);
-
-            try {
-                const response = await fetch('/submit_box', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Description_Type: description_type })
-                });
-                const data = await response.json();
-                showMessage(response.ok, response.ok ? `✅ ${data.message}` : `❌ ${data.error}`, resultDiv);
-            } catch (error) {
-                showMessage(false, `❌ Error: ${error.message}`, resultDiv);
-            } finally {
-                toggleUI(false, resultDiv, loadingDiv);
-            }
+            const apiData = { Description_Type: description_type };
+            await apiCall('/submit_box', 'POST', apiData, 'res-box', 'loading-box');
         }
 
         // --- CREAR NUEVA CAJA ---
         document.getElementById('newBoxForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const resultDiv = document.getElementById('res-create');
-            const loadingDiv = document.getElementById('loading-create');
 
             const formData = new FormData();
             formData.append('Description_Type', document.getElementById('box_name').value);
@@ -828,30 +820,48 @@
                 formData.append('image', imageFile);
             }
 
-            toggleUI(true, resultDiv, loadingDiv, [document.getElementById('btn-create-box')]);
+            const success = await apiCall('/api/boxes', 'POST', formData, 'res-create', 'loading-create', null, [document.getElementById('btn-create-box')], true);
 
-            try {
-                const response = await fetch('/api/boxes', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (response.ok) {
-                    showMessage(true, `✅ ${data.message}`, resultDiv);
-                    document.getElementById('newBoxForm').reset();
-                    loadBoxes(); // Refrescar lista
-                } else {
-                    showMessage(false, `❌ ${data.error}`, resultDiv);
-                }
-            } catch (error) {
-                showMessage(false, `❌ Error: ${error.message}`, resultDiv);
-            } finally {
-                toggleUI(false, resultDiv, loadingDiv, [document.getElementById('btn-create-box')]);
+            if (success) {
+                document.getElementById('newBoxForm').reset();
+                loadBoxes(); // Refrescar lista
             }
         });
 
         // --- UTILIDADES ---
+        async function apiCall(endpoint, method, bodyData, resId, loadId, manualSuccessMsg = null, extraBtns = [], isFormData = false) {
+            const resultDiv = document.getElementById(resId);
+            const loadingDiv = document.getElementById(loadId);
+            toggleUI(true, resultDiv, loadingDiv, extraBtns);
+
+            let fetchOptions = { method: method };
+            if (isFormData) {
+                fetchOptions.body = bodyData;
+            } else if (bodyData) {
+                fetchOptions.headers = { 'Content-Type': 'application/json' };
+                fetchOptions.body = JSON.stringify(bodyData);
+            }
+
+            try {
+                const response = await fetch(endpoint, fetchOptions);
+                const data = await response.json();
+
+                if (response.ok || data.success) {
+                    const msg = manualSuccessMsg || `✅ ${data.message || 'Operación exitosa'}`;
+                    showMessage(true, msg, resultDiv);
+                    return true;
+                } else {
+                    showMessage(false, `❌ ${data.error || 'Error desconocido'}`, resultDiv);
+                    return false;
+                }
+            } catch (error) {
+                showMessage(false, `❌ Error de red: ${error.message}`, resultDiv);
+                return false;
+            } finally {
+                toggleUI(false, resultDiv, loadingDiv, extraBtns);
+            }
+        }
+
         function toggleUI(disabled, resDiv, logDiv, extraBtns = []) {
             document.querySelectorAll('#box-list button, .btn-start, .btn-stop, .btn-pause').forEach(b => b.disabled = disabled);
             extraBtns.forEach(b => b.disabled = disabled);
@@ -859,10 +869,17 @@
             if (disabled) resDiv.style.display = 'none';
         }
 
+        let messageTimeoutId = null;
         function showMessage(isSuccess, text, element) {
             element.innerHTML = text;
             element.className = 'message ' + (isSuccess ? 'success' : 'error');
             element.style.display = 'block';
+
+            // Auto hide message after 5 seconds to keep UI clean
+            if (messageTimeoutId) clearTimeout(messageTimeoutId);
+            messageTimeoutId = setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
         }
     </script>
 </body>
