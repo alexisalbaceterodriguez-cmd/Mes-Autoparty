@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Máquina OPC UA</title>
+    <title>Panel de Control MES</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -12,28 +12,40 @@
             color: #ffffff;
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start;
+            min-height: 100vh;
             margin: 0;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
 
-        .container {
+        .main-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .card {
             background-color: #1e1e1e;
-            padding: 40px;
+            padding: 30px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            width: 350px;
         }
 
-        h1 {
+        h2 {
             color: #ffffff;
-            font-size: 24px;
-            margin-bottom: 30px;
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 25px;
             font-weight: 600;
             letter-spacing: 0.5px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
         }
 
+        /* Botones de Control */
         .button-group {
             display: flex;
             flex-direction: column;
@@ -41,17 +53,16 @@
         }
 
         button {
+            background-color: #2c2c2c;
             color: white;
-            padding: 16px 20px;
-            border: none;
+            padding: 14px 20px;
+            border: 1px solid #444;
             border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
+            transition: all 0.2s;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -65,42 +76,98 @@
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none !important;
         }
 
+        button:hover:not(:disabled) {
+            background-color: #3d3d3d;
+            border-color: #666;
+        }
+
+        /* Colores específicos Control */
         .btn-start {
             background: linear-gradient(135deg, #11998e, #38ef7d);
-            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+            border: none;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
         }
 
         .btn-start:hover:not(:disabled) {
-            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.5);
+            background: linear-gradient(135deg, #15b7aa, #42f58c);
         }
 
         .btn-stop {
             background: linear-gradient(135deg, #cb2d3e, #ef473a);
-            box-shadow: 0 4px 15px rgba(239, 71, 58, 0.4);
+            border: none;
+            box-shadow: 0 4px 15px rgba(239, 71, 58, 0.3);
         }
 
         .btn-stop:hover:not(:disabled) {
-            box-shadow: 0 6px 20px rgba(239, 71, 58, 0.6);
+            box-shadow: 0 6px 20px rgba(239, 71, 58, 0.5);
+            background: linear-gradient(135deg, #d83446, #fa5245);
         }
 
         .btn-pause {
             background: linear-gradient(135deg, #f2994a, #f2c94c);
-            box-shadow: 0 4px 15px rgba(242, 201, 76, 0.4);
+            border: none;
+            box-shadow: 0 4px 15px rgba(242, 201, 76, 0.3);
+            color: #111;
         }
 
         .btn-pause:hover:not(:disabled) {
-            box-shadow: 0 6px 20px rgba(242, 201, 76, 0.6);
+            box-shadow: 0 6px 20px rgba(242, 201, 76, 0.5);
+            background: linear-gradient(135deg, #faaa55, #fce055);
         }
 
+        /* Formulario Nueva Caja */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #121212;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .btn-submit {
+            background-color: #007bff;
+            border: none;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background-color: #0069d9;
+        }
+
+        /* Notificaciones y Carga */
         .message {
-            margin-top: 25px;
+            margin-top: 20px;
             font-weight: bold;
             display: none;
             padding: 12px;
             border-radius: 6px;
             font-size: 14px;
+            text-align: center;
         }
 
         .success {
@@ -120,6 +187,7 @@
             color: #aaa;
             display: none;
             font-size: 14px;
+            text-align: center;
         }
 
         .spinner {
@@ -139,78 +207,214 @@
                 transform: rotate(360deg);
             }
         }
+
+        .caja-info {
+            font-size: 12px;
+            color: #aaa;
+            font-weight: normal;
+            display: block;
+            margin-top: 4px;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
-        <h1>Control de Máquina</h1>
+    <div class="main-container">
 
-        <div class="button-group">
-            <button class="btn-start" onclick="sendValue(1)">
-                ▶ START
-            </button>
-            <button class="btn-pause" onclick="sendValue(2)">
-                ⏸ PAUSE
-            </button>
-            <button class="btn-stop" onclick="sendValue(0)">
-                ⏹ STOP
-            </button>
+        <!-- SECCIÓN 1: Control de Máquina -->
+        <div class="card">
+            <h2>⚙️ Control de Máquina</h2>
+            <div class="button-group">
+                <button class="btn-start" onclick="sendControl(1)">
+                    ▶ START
+                </button>
+                <button class="btn-pause" onclick="sendControl(2)">
+                    ⏸ PAUSE
+                </button>
+                <button class="btn-stop" onclick="sendControl(0)">
+                    ⏹ STOP
+                </button>
+            </div>
+            <div id="loading-control" class="loading">
+                <div class="spinner"></div> Enviando...
+            </div>
+            <div id="res-control" class="message"></div>
         </div>
 
-        <div id="loading" class="loading">
-            <div class="spinner"></div> Enviando instrucción...
+        <!-- SECCIÓN 2: Selección de Producto -->
+        <div class="card">
+            <h2>📦 Producto (Cajas)</h2>
+            <div id="box-list" class="button-group">
+                <!-- Se llenará dinámicamente con JS -->
+                <div style="text-align:center; color:#888;">Cargando cajas...</div>
+            </div>
+            <div id="loading-box" class="loading">
+                <div class="spinner"></div> Configurando producto...
+            </div>
+            <div id="res-box" class="message"></div>
         </div>
-        <div id="resultado" class="message"></div>
+
+        <!-- SECCIÓN 3: Nueva Caja -->
+        <div class="card">
+            <h2>➕ Definir Nueva Caja</h2>
+            <form id="newBoxForm">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex:2;">
+                        <label>Nombre del formato</label>
+                        <input type="text" id="box_name" placeholder="Ej: Extra Grande" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>ID Box Type</label>
+                        <input type="number" id="box_type_id" placeholder="Ej: 4" required min="1">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Altura</label>
+                        <input type="number" id="box_h" required min="1">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Anchura</label>
+                        <input type="number" id="box_w" required min="1">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Largo</label>
+                        <input type="number" id="box_l" required min="1">
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" id="btn-create-box">Crear y Guardar</button>
+            </form>
+            <div id="loading-create" class="loading">
+                <div class="spinner"></div> Guardando...
+            </div>
+            <div id="res-create" class="message"></div>
+        </div>
+
     </div>
 
     <script>
-        async function sendValue(valor) {
-            const buttons = document.querySelectorAll('button');
-            const loading = document.getElementById('loading');
-            const resultado = document.getElementById('resultado');
+        // Cargar cajas al iniciar la página
+        document.addEventListener('DOMContentLoaded', loadBoxes);
 
-            // Deshabilitar botones mientras carga
-            buttons.forEach(btn => btn.disabled = true);
-
-            loading.style.display = 'block';
-            resultado.style.display = 'none';
-            resultado.className = 'message';
+        // --- FUNCIONES DE MÁQUINA (START/STOP/PAUSE) ---
+        async function sendControl(valor) {
+            const resultDiv = document.getElementById('res-control');
+            const loadingDiv = document.getElementById('loading-control');
+            toggleUI(true, resultDiv, loadingDiv);
 
             try {
                 const response = await fetch('/submit', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ valor: valor })
                 });
-
                 const data = await response.json();
 
-                if (response.ok) {
-                    resultado.innerHTML = `✅ Comando <b>${getCommandName(valor)}</b> ejecutado con éxito.`;
-                    resultado.classList.add('success');
-                } else {
-                    resultado.innerHTML = '❌ ' + (data.error || 'Error desconocido');
-                    resultado.classList.add('error');
-                }
+                let cmdName = valor === 1 ? 'START' : (valor === 0 ? 'STOP' : 'PAUSE');
+                showMessage(response.ok, response.ok ? `✅ Comando <b>${cmdName}</b> ejecutado.` : `❌ ${data.error}`, resultDiv);
             } catch (error) {
-                resultado.innerHTML = '❌ Error de conexión: ' + error.message;
-                resultado.classList.add('error');
+                showMessage(false, `❌ Error: ${error.message}`, resultDiv);
             } finally {
-                resultado.style.display = 'block';
-                buttons.forEach(btn => btn.disabled = false);
-                loading.style.display = 'none';
+                toggleUI(false, resultDiv, loadingDiv);
             }
         }
 
-        function getCommandName(val) {
-            if (val === 1) return 'START';
-            if (val === 0) return 'STOP';
-            if (val === 2) return 'PAUSE';
-            return val;
+        // --- FUNCIONES DE PRODUCTO ---
+        async function loadBoxes() {
+            try {
+                const res = await fetch('/api/boxes');
+                const boxes = await res.json();
+
+                const boxList = document.getElementById('box-list');
+                boxList.innerHTML = '';
+
+                boxes.forEach(box => {
+                    const btn = document.createElement('button');
+                    btn.onclick = () => selectBox(box.tipo_caja);
+                    btn.innerHTML = `
+                        <div>
+                            ${box.tipo_caja}
+                            <span class="caja-info">Box Type: ${box.box_type} | ${box.altura} x ${box.anchura} x ${box.largo}</span>
+                        </div>
+                    `;
+                    boxList.appendChild(btn);
+                });
+            } catch (e) {
+                document.getElementById('box-list').innerHTML = `<div style="color:#ff6b6b">Error al cargar</div>`;
+            }
+        }
+
+        async function selectBox(tipo_caja) {
+            const resultDiv = document.getElementById('res-box');
+            const loadingDiv = document.getElementById('loading-box');
+            toggleUI(true, resultDiv, loadingDiv);
+
+            try {
+                const response = await fetch('/submit_box', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo_caja: tipo_caja })
+                });
+                const data = await response.json();
+                showMessage(response.ok, response.ok ? `✅ ${data.message}` : `❌ ${data.error}`, resultDiv);
+            } catch (error) {
+                showMessage(false, `❌ Error: ${error.message}`, resultDiv);
+            } finally {
+                toggleUI(false, resultDiv, loadingDiv);
+            }
+        }
+
+        // --- CREAR NUEVA CAJA ---
+        document.getElementById('newBoxForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('res-create');
+            const loadingDiv = document.getElementById('loading-create');
+
+            const payload = {
+                tipo_caja: document.getElementById('box_name').value,
+                box_type: document.getElementById('box_type_id').value,
+                altura: document.getElementById('box_h').value,
+                anchura: document.getElementById('box_w').value,
+                largo: document.getElementById('box_l').value
+            };
+
+            toggleUI(true, resultDiv, loadingDiv, [document.getElementById('btn-create-box')]);
+
+            try {
+                const response = await fetch('/api/boxes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(true, `✅ ${data.message}`, resultDiv);
+                    document.getElementById('newBoxForm').reset();
+                    loadBoxes(); // Refrescar lista
+                } else {
+                    showMessage(false, `❌ ${data.error}`, resultDiv);
+                }
+            } catch (error) {
+                showMessage(false, `❌ Error: ${error.message}`, resultDiv);
+            } finally {
+                toggleUI(false, resultDiv, loadingDiv, [document.getElementById('btn-create-box')]);
+            }
+        });
+
+        // --- UTILIDADES ---
+        function toggleUI(disabled, resDiv, logDiv, extraBtns = []) {
+            document.querySelectorAll('#box-list button, .btn-start, .btn-stop, .btn-pause').forEach(b => b.disabled = disabled);
+            extraBtns.forEach(b => b.disabled = disabled);
+            logDiv.style.display = disabled ? 'block' : 'none';
+            if (disabled) resDiv.style.display = 'none';
+        }
+
+        function showMessage(isSuccess, text, element) {
+            element.innerHTML = text;
+            element.className = 'message ' + (isSuccess ? 'success' : 'error');
+            element.style.display = 'block';
         }
     </script>
 </body>
