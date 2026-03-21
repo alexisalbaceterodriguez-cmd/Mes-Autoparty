@@ -1,0 +1,5 @@
+{
+    "OPCUA_ENDPOINT": "opc.tcp://100.112.44.44:4840",
+    "OPCUA_FOLDER": "MES",
+    "COLLECTOR_INTERVAL": 0.01
+}

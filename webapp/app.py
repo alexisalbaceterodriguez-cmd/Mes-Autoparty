@@ -1,19 +1,15 @@
 import os
-import json
 import sqlite3
-import subprocess
+import asyncio
 from contextlib import contextmanager
-from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import time
+from logic.opcua_engine import write_opcua_value, write_opcua_multiple, ua
 
 app = Flask(__name__)
 
 # Rutas a los ficheros
-NOTEBOOK_PATH = os.path.join(os.path.dirname(__file__), '..', 'notebooks', 'write_to_opcua.ipynb')
-PRODUCT_NOTEBOOK_PATH = os.path.join(os.path.dirname(__file__), '..', 'notebooks', 'write_product_config.ipynb')
-PYTHON_EXEC = os.path.join(os.path.dirname(__file__), '..', 'venv', 'Scripts', 'python.exe')
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'datos.db')
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'images')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -31,19 +27,6 @@ def get_db_connection():
         conn.commit()
     finally:
         conn.close()
-
-def execute_notebook(notebook_path, success_message):
-    """Ejecuta un notebook Jupyter usando subprocess y devuelve la respuesta JSON."""
-    try:
-        cmd = [PYTHON_EXEC, "-m", "jupyter", "nbconvert", "--execute", "--inplace", notebook_path]
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return jsonify({'success': True, 'message': success_message})
-    except subprocess.CalledProcessError as e:
-        print(f"Error stdout:\n{e.stdout}")
-        print(f"Error stderr:\n{e.stderr}")
-        return jsonify({'success': False, 'error': 'Error al ejecutar el notebook: Revisa la consola'}), 500
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Error inesperado al ejecutar: {str(e)}'}), 500
 
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -161,43 +144,15 @@ def submit():
 
     try:
         nuevo_valor = int(data['valor'])
-    except ValueError:
-         return jsonify({'success': False, 'error': 'El valor debe ser un número entero'}), 400
-
-    # 1. Leer el notebook
-    try:
-        with open(NOTEBOOK_PATH, 'r', encoding='utf-8') as f:
-            notebook = json.load(f)
-    except FileNotFoundError:
-        return jsonify({'success': False, 'error': f'No se encontró el archivo {NOTEBOOK_PATH}'}), 500
+        # Puente Sincrónico -> Asíncrono para Flask nativo
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success, message = loop.run_until_complete(write_opcua_value("Machine_State", nuevo_valor, ua.VariantType.Int16))
+        loop.close()
+        
+        return jsonify({'success': success, 'message': message if success else None, 'error': None if success else message})
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Error al leer el notebook: {str(e)}'}), 500
-
-    # 2. Modificar la celda con "variable_recibida ="
-    modificado = False
-    for cell in notebook.get('cells', []):
-        if cell.get('cell_type') == 'code':
-            source = cell.get('source', [])
-            for i, line in enumerate(source):
-                if line.startswith('variable_recibida ='):
-                    source[i] = f'variable_recibida = {nuevo_valor}\n'
-                    modificado = True
-                    break
-            if modificado:
-                break
-
-    if not modificado:
-         return jsonify({'success': False, 'error': 'No se encontró "variable_recibida =" en el notebook'}), 500
-
-    # 3. Guardar el notebook modificado
-    try:
-        with open(NOTEBOOK_PATH, 'w', encoding='utf-8') as f:
-            json.dump(notebook, f, indent=1)
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Error al guardar el notebook: {str(e)}'}), 500
-
-    # 4. Ejecutar el notebook usando el helper
-    return execute_notebook(NOTEBOOK_PATH, 'Comando enviado correctamente')
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/submit_box', methods=['POST'])
 def submit_box():
@@ -207,7 +162,6 @@ def submit_box():
 
     description_type = data['Description_Type']
     
-    # 1. Get box dimensions from DB
     try:
         with get_db_connection() as (conn, cursor):
             cursor.execute('SELECT box_type, altura, anchura, largo FROM cajas_config WHERE Description_Type = ?', (description_type,))
@@ -216,57 +170,23 @@ def submit_box():
         if not row:
             return jsonify({'success': False, 'error': f'Caja {description_type} no encontrada en la base de datos'}), 404
             
-        box_type_val = row['box_type']
-        altura_val = row['altura']
-        anchura_val = row['anchura']
-        largo_val = row['largo']
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Error al consultar la base de datos: {str(e)}'}), 500
-
-    # 2. Modify `write_product_config.ipynb`
-    try:
-        with open(PRODUCT_NOTEBOOK_PATH, 'r', encoding='utf-8') as f:
-            notebook = json.load(f)
-            
-        modificado_description_type = False
-        modificado_box_type = False
-        modificado_altura = False
-        modificado_anchura = False
-        modificado_largo = False
+        variables = {
+            "Description_Type": description_type,
+            "Box_Type": row['box_type'],
+            "Altura": row['altura'],
+            "Anchura": row['anchura'],
+            "Largo": row['largo']
+        }
         
-        for cell in notebook.get('cells', []):
-            if cell.get('cell_type') == 'code':
-                source = cell.get('source', [])
-                for i, line in enumerate(source):
-                    if line.startswith('description_type_val ='):
-                        source[i] = f'description_type_val = "{description_type}"\n'
-                        modificado_description_type = True
-                    elif line.startswith('box_type_val ='):
-                        source[i] = f'box_type_val = {box_type_val}\n'
-                        modificado_box_type = True
-                    elif line.startswith('altura_val ='):
-                        source[i] = f'altura_val = {altura_val}\n'
-                        modificado_altura = True
-                    elif line.startswith('anchura_val ='):
-                        source[i] = f'anchura_val = {anchura_val}\n'
-                        modificado_anchura = True
-                    elif line.startswith('largo_val ='):
-                        source[i] = f'largo_val = {largo_val}\n'
-                        modificado_largo = True
+        # Puente Sincrónico -> Asíncrono
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        success, message = loop.run_until_complete(write_opcua_multiple(variables))
+        loop.close()
         
-        if not (modificado_description_type and modificado_box_type and modificado_altura and modificado_anchura and modificado_largo):
-             return jsonify({'success': False, 'error': 'No se encontraron las variables en el notebook'}), 500
-             
-        with open(PRODUCT_NOTEBOOK_PATH, 'w', encoding='utf-8') as f:
-            json.dump(notebook, f, indent=1)
-            
-    except FileNotFoundError:
-        return jsonify({'success': False, 'error': f'No se encontró {PRODUCT_NOTEBOOK_PATH}'}), 500
+        return jsonify({'success': success, 'message': message if success else None, 'error': None if success else message})
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Error al modificar el notebook: {str(e)}'}), 500
-
-    # 3. Execute `write_product_config.ipynb`
-    return execute_notebook(PRODUCT_NOTEBOOK_PATH, f'Configuración de la caja {description_type} ({altura_val}x{anchura_val}x{largo_val}) enviada')
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
